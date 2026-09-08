@@ -1,14 +1,13 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 import joblib
 import random
 
-st.set_page_config(page_title="Student Outcome Predictor", layout="centered")
+# Use wide layout
+st.set_page_config(page_title="Student Outcome & Risk Dashboard", layout="wide")
 
-st.title("🎓 Student Performance Predictor")
-st.markdown("Enter student information to evaluate academic risk and predict pass probability.")
-
-# 1. Load trained model pipeline
+# Load model pipeline
 @st.cache_resource
 def load_pipeline():
     return joblib.load("student_performance_logistic_model.pkl")
@@ -19,83 +18,97 @@ except Exception as e:
     st.error(f"Error loading model: {e}")
     st.stop()
 
-# 2. State initialization for Manual vs Auto-fill
-cities = ["Kathmandu", "Bhaktapur", "Lalitpur", "Pokhara", "Biratnagar", "Butwal", "Dharan"]
+# Header
+st.title("🎓 Student Academic Risk & Performance Dashboard")
+st.markdown("Simulate student profiles or type custom values to forecast examination outcomes.")
 
+# Session state initialization
+cities = ["Kathmandu", "Bhaktapur", "Lalitpur", "Pokhara", "Biratnagar", "Butwal", "Dharan"]
 defaults = {
     'age': 16.0,
     'gender': 'Male',
     'city': 'Kathmandu',
-    'attendance': 80.0,
+    'attendance': 82.0,
     'enroll_year': 2026,
     'enroll_month': 3,
-    'math': 65.0,
-    'science': 65.0,
-    'english': 65.0,
-    'social': 65.0
+    'math': 68.0,
+    'science': 72.0,
+    'english': 64.0,
+    'social': 60.0
 }
-
 for key, val in defaults.items():
     if key not in st.session_state:
         st.session_state[key] = val
 
-# Auto-fill / Quick Preset buttons
-st.subheader("Presets & Controls")
-btn_col1, btn_col2, btn_col3 = st.columns(3)
+# Two-column layout
+left_col, right_col = st.columns([1.1, 1], gap="large")
 
-with btn_col1:
-    if st.button(" Auto-Fill Random Student"):
-        st.session_state.age = float(random.randint(15, 20))
-        st.session_state.gender = random.choice(["Male", "Female"])
-        st.session_state.city = random.choice(cities)
-        st.session_state.attendance = round(random.uniform(40.0, 95.0), 1)
-        st.session_state.math = round(random.uniform(25.0, 95.0), 1)
-        st.session_state.science = round(random.uniform(25.0, 95.0), 1)
-        st.session_state.english = round(random.uniform(25.0, 95.0), 1)
-        st.session_state.social = round(random.uniform(25.0, 95.0), 1)
-        st.rerun()
+with left_col:
+    st.subheader(" Student Profile & Inputs")
 
-with btn_col2:
-    if st.button("⚠️ Fill At-Risk Student"):
-        st.session_state.attendance = 25.0
-        st.session_state.math = 20.0
-        st.session_state.science = 22.0
-        st.session_state.english = 30.0
-        st.session_state.social = 28.0
-        st.rerun()
+    # 1. Preset simulation buttons outside form for instant auto-filling
+    p1, p2, p3 = st.columns(3)
+    with p1:
+        if st.button(" Random Student", use_container_width=True):
+            st.session_state.age = float(random.randint(15, 20))
+            st.session_state.gender = random.choice(["Male", "Female"])
+            st.session_state.city = random.choice(cities)
+            st.session_state.attendance = float(random.randint(40, 95))
+            st.session_state.math = float(random.randint(25, 90))
+            st.session_state.science = float(random.randint(25, 90))
+            st.session_state.english = float(random.randint(25, 90))
+            st.session_state.social = float(random.randint(25, 90))
+            st.rerun()
+    with p2:
+        if st.button("⚠️ At-Risk Profile", use_container_width=True):
+            st.session_state.attendance = 25.0
+            st.session_state.math = 22.0
+            st.session_state.science = 25.0
+            st.session_state.english = 30.0
+            st.session_state.social = 28.0
+            st.rerun()
+    with p3:
+        if st.button("⭐ High Performer", use_container_width=True):
+            st.session_state.attendance = 95.0
+            st.session_state.math = 88.0
+            st.session_state.science = 90.0
+            st.session_state.english = 85.0
+            st.session_state.social = 84.0
+            st.rerun()
 
-with btn_col3:
-    if st.button("⭐ Fill High Performer"):
-        st.session_state.attendance = 92.0
-        st.session_state.math = 88.0
-        st.session_state.science = 85.0
-        st.session_state.english = 90.0
-        st.session_state.social = 86.0
-        st.rerun()
+    st.write("")
 
-st.divider()
+    # 2. Input Form with explicit Run/Submit button
+    with st.form(key="student_input_form"):
+        d1, d2 = st.columns(2)
+        with d1:
+            age = st.number_input("Age", 10.0, 25.0, key="age", step=1.0)
+            gender = st.selectbox("Gender", ["Male", "Female"], key="gender")
+            city = st.selectbox("City", cities, key="city")
+        with d2:
+            attendance = st.number_input("Attendance Rate (%)", 0.0, 100.0, key="attendance", step=1.0)
+            enroll_year = st.selectbox("Enrollment Year", [2023, 2024, 2025, 2026], key="enroll_year")
+            enroll_month = st.number_input("Enrollment Month (1-12)", 1, 12, key="enroll_month", step=1)
 
-# 3. Form Inputs
-st.subheader("Student Details")
-col1, col2 = st.columns(2)
+        st.markdown("**Subject Scores (0 - 100)**")
+        s1, s2, s3, s4 = st.columns(4)
+        with s1:
+            math = st.number_input("Math", 0.0, 100.0, key="math", step=1.0)
+        with s2:
+            science = st.number_input("Science", 0.0, 100.0, key="science", step=1.0)
+        with s3:
+            english = st.number_input("English", 0.0, 100.0, key="english", step=1.0)
+        with s4:
+            social = st.number_input("Social", 0.0, 100.0, key="social", step=1.0)
 
-with col1:
-    age = st.number_input("Age", min_value=10.0, max_value=25.0, key="age", step=1.0)
-    gender = st.selectbox("Gender", ["Male", "Female"], key="gender")
-    city = st.selectbox("City", cities, key="city")
-    attendance = st.number_input("Attendance Rate (%)", min_value=0.0, max_value=100.0, key="attendance", step=1.0)
-    enroll_year = st.selectbox("Enrollment Year", [2023, 2024, 2025, 2026], key="enroll_year")
-    enroll_month = st.number_input("Enrollment Month", min_value=1, max_value=12, key="enroll_month", step=1)
+        st.write("")
+        # The explicit execution trigger
+        submitted = st.form_submit_button(" Run Prediction & Analysis", type="primary", use_container_width=True)
 
-with col2:
-    math = st.number_input("Math Marks (0-100)", min_value=0.0, max_value=100.0, key="math", step=1.0)
-    science = st.number_input("Science Marks (0-100)", min_value=0.0, max_value=100.0, key="science", step=1.0)
-    english = st.number_input("English Marks (0-100)", min_value=0.0, max_value=100.0, key="english", step=1.0)
-    social = st.number_input("Social Marks (0-100)", min_value=0.0, max_value=100.0, key="social", step=1.0)
+with right_col:
+    st.subheader("📊 Prediction & Analysis Results")
 
-# 4. Predict Button
-st.write("")
-if st.button("Predict Student Outcome", type="primary"):
+    # Construct input dataframe
     input_data = pd.DataFrame([{
         'Age': age,
         'Math': math,
@@ -109,16 +122,31 @@ if st.button("Predict Student Outcome", type="primary"):
         'City': city
     }])
 
+    # Compute inferences
     prob_pass = model.predict_proba(input_data)[0][1]
-    prediction = int(prob_pass >= 0.50)
+    is_pass = prob_pass >= 0.50
+    avg_score = round((math + science + english + social) / 4.0, 1)
+
+    # Key metric cards
+    m1, m2, m3 = st.columns(3)
+    m1.metric("Average Score", f"{avg_score}%")
+    m2.metric("Attendance", f"{attendance:.1f}%")
+    m3.metric("Pass Probability", f"{prob_pass:.1%}")
+
+    st.write("")
+
+    # Status badge
+    if is_pass:
+        st.success(f"### Result: Pass / Low Academic Risk\nConfidence: **{prob_pass:.1%}**")
+    else:
+        st.error(f"### Result: At-Risk / Academic Support Needed\nFailure Risk: **{(1 - prob_pass):.1%}**")
 
     st.divider()
-    st.subheader("Prediction Result")
 
-    col_metric1, col_metric2 = st.columns(2)
-    col_metric1.metric("Predicted Pass Probability", f"{prob_pass:.1%}")
-
-    if prediction == 1:
-        col_metric2.success("Status: Pass / Low Risk")
-    else:
-        col_metric2.error("Status: At-Risk / High Attention Needed")
+    # Subject breakdown chart
+    st.markdown("**Subject Breakdown**")
+    score_df = pd.DataFrame({
+        "Subject": ["Math", "Science", "English", "Social"],
+        "Marks": [math, science, english, social]
+    })
+    st.bar_chart(score_df.set_index("Subject"))
