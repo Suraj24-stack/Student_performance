@@ -44,7 +44,7 @@ st.subheader("Presets & Controls")
 btn_col1, btn_col2, btn_col3 = st.columns(3)
 
 with btn_col1:
-    if st.button("🎲 Auto-Fill Random Student"):
+    if st.button(" Auto-Fill Random Student"):
         st.session_state.age = float(random.randint(15, 20))
         st.session_state.gender = random.choice(["Male", "Female"])
         st.session_state.city = random.choice(cities)
